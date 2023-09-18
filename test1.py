@@ -1,14 +1,25 @@
 from tkinter import *
 from tkinter import messagebox
 import mysql.connector
-import os
+from cryptography.fernet import Fernet
 import datetime
 import time
-from PIL import ImageTk, Image
 
 #connecting to the database
 db = mysql.connector.connect(host="localhost",user="root",passwd="Harveylinux77+",database="test1")
 mycur = db.cursor()
+
+with open('clave.key', 'rb') as archivo_clave:
+    clave = archivo_clave.read()
+
+cipher_suite = Fernet(clave)
+
+def cifrar(texto):
+    return cipher_suite.encrypt(texto.encode())
+
+# Función para descifrar un texto
+def descifrar(texto_cifrado):
+    return cipher_suite.decrypt(texto_cifrado).decode()
 
 def error_destroy():
     err.destroy()
@@ -103,11 +114,13 @@ def register_user():
     id_info  = identificador.get()
     username_info = username.get()
     initial_balance = balance.get()
+    password_info = password.get()
+    password_cifrada = cifrar(password_info)
     if username_info == "":
         error()
     else:
-        sql = "INSERT INTO cuentas VALUES(%s,%s,%s)"
-        t = (id_info, username_info, initial_balance)
+        sql = "INSERT INTO cuentas VALUES(%s,%s,%s,%s)"
+        t = (id_info, username_info, password_cifrada, initial_balance)
         mycur.execute(sql, t)
         db.commit()
         Label(root1, text="").pack()
@@ -124,10 +137,12 @@ def registration():
     root1.configure(bg='#14549C')
     global identificador
     global username
+    global password
     global balance
     Label(root1,text="Registrate hoy mismo",bg="white",fg="black",font="bold",width=300).pack()
     identificador = StringVar()
     username = StringVar()
+    password = StringVar()
     balance = DoubleVar()
     balance.set(0)
     Label(root1,text="").pack()
@@ -136,6 +151,8 @@ def registration():
     Label(root1, text="").pack()
     Label(root1,text="Username :",font="bold",bg="#14549C", fg="white").pack()
     Entry(root1,textvariable=username).pack()
+    Label(root1,text="Password :",font="bold",bg="#14549C", fg="white").pack()
+    Entry(root1,textvariable=password, show="*").pack()
     Label(root1, text="").pack()
     Label(root1, text="Saldo inicial :",font="bold",bg="#14549C", fg="white").pack()
     Entry(root1, textvariable=balance).pack()
@@ -149,12 +166,15 @@ def login():
     root2.geometry("500x500")
     root2.configure(bg='#14549C')
     global username_varify
+    global password_varify
     Label(root2, text="Ingresa a tu cuenta", bg="white", fg="black", font="bold",width=300).pack()
     username_varify = StringVar()
     Label(root2, text="").pack()
     Label(root2, text="Nombre :", font="bold",bg="#14549C", fg="white").pack()
     Entry(root2, textvariable=username_varify).pack()
     Label(root2, text="").pack()
+    Label(root2, text="Password :", font="bold",bg="#14549C", fg="white").pack()
+    Entry(root2, textvariable=password_varify, show="*").pack()
     Button(root2, text="Ingresa a tu cuenta",command=login_varify,font="bold",bg="white", fg="#14549C").pack()
     Label(root2, text="")
 
@@ -394,8 +414,10 @@ def failed():
 
 def login_varify():
     user_varify = username_varify.get()
-    sql = "SELECT * FROM cuentas WHERE user = %s"
-    mycur.execute(sql,[(user_varify)])
+    pass_varify = pass_varify.get()
+    pass_desf = cifrar(pass_varify)
+    sql = "SELECT * FROM cuentas WHERE user = %s AND password = %s"
+    mycur.execute(sql,[(user_varify), (pass_desf)])
     results = mycur.fetchall()
     results = results[0]
     if results:
