@@ -1,0 +1,25 @@
+
+CREATE DATABASE Banco;
+USE Banco;
+
+CREATE TABLE Cuentas (
+    ID INTEGER PRIMARY KEY AUTO_INCREMENT,
+    NombreCliente VARCHAR(100),
+    Saldo DECIMAL(10,2)
+);
+
+CREATE TABLE Transacciones (
+    ID INTEGER PRIMARY KEY AUTO_INCREMENT,
+    IDCuenta INTEGER NOT NULL,
+    Monto DECIMAL(10,2) NOT NULL,
+    Fecha DATE NOT NULL,
+    FOREIGN KEY (IDCuenta) REFERENCES Cuentas(ID)
+);
+
+
+
+
+
+
+
+
